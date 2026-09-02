@@ -1,0 +1,38 @@
+imap:
+  host: imap.example.com
+  port: 993
+  ssl: true
+  username: ""
+  password: ""
+  mailbox: INBOX
+  spam_folder: Junk
+  poll_interval: 30
+  connect_timeout: 30
+
+rspamd:
+  url: http://rspamd:11333
+  password: ""
+  timeout: 30
+
+state:
+  db_path: /data/state.db
+
+logging:
+  level: INFO
+
+# The web interface is available at http://localhost:8080.
+web:
+  port: 8080
+
+# Rspamd suggestions are handled before these ordered rules. A reject, soft
+# reject, add-header, rewrite-subject decision, or score at its threshold moves
+# mail to imap.spam_folder. Use contains(subject, 'word'), contains(text,
+# 'word'), contains(from_addr, 'name@example.com'), and score comparisons here.
+rules:
+  - name: move_invoices
+    condition: "contains(subject, 'invoice') or contains(text, 'invoice')"
+    action: move
+    target: Finance
+  - name: allow_other_mail
+    condition: "true"
+    action: none

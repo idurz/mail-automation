@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mail Automation</title>
+  <style>
+    :root { font-family: Georgia, serif; color: #1c2b32; background: #eef2ed; }
+    body { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { margin-bottom: .25rem; } h2 { margin-top: 2rem; }
+    form, table { width: 100%; border-collapse: collapse; background: #fff; }
+    form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; padding: 1rem; box-sizing: border-box; }
+    label { display: grid; gap: .25rem; font: 600 .85rem sans-serif; }
+    .wide { grid-column: span 2; } input, select, button { padding: .55rem; font: inherit; }
+    button { background: #145a4f; color: white; border: 0; cursor: pointer; } button.delete { background: #9b2c2c; }
+    th, td { padding: .6rem; border-bottom: 1px solid #d8ded8; text-align: left; vertical-align: top; } th { background: #dfe8dd; }
+    .table-wrap { overflow-x: auto; } .muted { color: #52676a; }
+  </style>
+</head>
+<body>
+  <h1>Mail Automation</h1>
+  <p class="muted">Rules are evaluated in listed order after Rspamd allows a message through.</p>
+  <h2>Add Rule</h2>
+  <form id="rule-form">
+    <label>Name<input name="name" required placeholder="Move invoices"></label>
+    <label>Action<select name="action"><option value="move">Move</option><option value="copy">Copy</option><option value="none">Leave in inbox</option><option value="delete">Delete</option><option value="flag">Flag</option></select></label>
+    <label class="wide">Condition<input name="condition" required placeholder="contains(subject, 'invoice') or contains(text, 'invoice')"></label>
+    <label>Target folder<input name="target" placeholder="Finance"></label>
+    <label>Flag<input name="flag" placeholder="\\Flagged"></label>
+    <button class="wide" type="submit">Add rule</button>
+  </form>
+  <h2>Rules</h2>
+  <div class="table-wrap"><table><thead><tr><th>Name</th><th>Condition</th><th>Action</th><th>Target</th><th></th></tr></thead><tbody id="rules"></tbody></table></div>
+  <h2>Recent Actions</h2>
+  <div class="table-wrap"><table><thead><tr><th>Time</th><th>Subject</th><th>Sender</th><th>Rspamd</th><th>Result</th></tr></thead><tbody id="actions"></tbody></table></div>
+  <script>
+    const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]));
+    async function load() {
+      const [rules, actions] = await Promise.all(['/api/rules', '/api/actions'].map(url => fetch(url).then(response => response.json())));
+      document.querySelector('#rules').innerHTML = rules.map(rule => `<tr><td>${escapeHtml(rule.name)}</td><td>${escapeHtml(rule.condition)}</td><td>${escapeHtml(rule.action)}</td><td>${escapeHtml(rule.target)}</td><td><button class="delete" onclick="removeRule(${rule.id})">Delete</button></td></tr>`).join('');
+      document.querySelector('#actions').innerHTML = actions.map(action => `<tr><td>${escapeHtml(action.created_at)}</td><td>${escapeHtml(action.subject)}</td><td>${escapeHtml(action.sender)}</td><td>${escapeHtml(action.rspamd_score)} ${escapeHtml(action.rspamd_action)}</td><td>${escapeHtml(action.rule_name)}: ${escapeHtml(action.action)} ${escapeHtml(action.target)}</td></tr>`).join('');
+    }
+    async function removeRule(id) { await fetch(`/api/rules/${id}`, {method: 'DELETE'}); load(); }
+    document.querySelector('#rule-form').addEventListener('submit', async event => {
+      event.preventDefault(); const values = Object.fromEntries(new FormData(event.target));
+      const response = await fetch('/api/rules', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(values)});
+      if (!response.ok) { alert((await response.json()).error); return; }
+      event.target.reset(); load();
+    });
+    load(); setInterval(load, 10000);
+  </script>
+</body>
+</html>

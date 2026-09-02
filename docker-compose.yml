@@ -1,0 +1,16 @@
+services:
+  mail-automation:
+    build: .
+    restart: unless-stopped
+    environment:
+      IMAP_USERNAME: ${IMAP_USERNAME}
+      IMAP_PASSWORD: ${IMAP_PASSWORD}
+      RSPAMD_PASSWORD: ${RSPAMD_PASSWORD:-}
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - mail-automation-data:/data
+
+volumes:
+  mail-automation-data:
