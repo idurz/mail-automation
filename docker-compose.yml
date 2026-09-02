@@ -9,7 +9,6 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     volumes:
-      - ./config.yaml:/app/config.yaml:ro
       - mail-automation-data:/data
 
 volumes:
