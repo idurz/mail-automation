@@ -64,7 +64,9 @@ def load_config(path: str | Path) -> Config:
     rules = tuple(Rule(**rule) for rule in raw.get("rules", []))
     return Config(
         imap=ImapConfig(
-            host=imap["host"], port=imap.get("port", 993), ssl=imap.get("ssl", True),
+            host=os.environ.get("IMAP_HOST", imap["host"]),
+            port=int(os.environ.get("IMAP_PORT", imap.get("port", 993)) ),
+            ssl=imap.get("ssl", True),
             username=os.environ.get("IMAP_USERNAME", imap["username"]),
             password=os.environ.get("IMAP_PASSWORD", imap["password"]),
             mailbox=imap.get("mailbox", "INBOX"), spam_folder=imap.get("spam_folder", "Junk"),

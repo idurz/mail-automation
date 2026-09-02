@@ -1,5 +1,5 @@
 imap:
-  host: imap.example.com
+  host: 
   port: 993
   ssl: true
   username: ""
