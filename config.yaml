@@ -33,6 +33,3 @@ rules:
     condition: "contains(subject, 'invoice') or contains(text, 'invoice')"
     action: move
     target: Finance
-  - name: allow_other_mail
-    condition: "true"
-    action: none

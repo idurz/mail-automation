@@ -73,7 +73,12 @@ def _process_mailbox(
             if _rspamd_marks_spam(result.action, result.score, result.required_score):
                 rule_name, action, target, flag = "rspamd_spam", "move", imap_config.spam_folder, None
             else:
-                rule = next((candidate for candidate in state.rules() if evaluator.evaluate(candidate, message, result)), None)
+                rules = state.rules()
+                rule = next(
+                    (candidate for candidate in rules if candidate.condition.strip().lower() != "true"
+                     and evaluator.evaluate(candidate, message, result)),
+                    next((candidate for candidate in rules if evaluator.evaluate(candidate, message, result)), None),
+                )
                 rule_name = rule.name if rule else "no_matching_rule"
                 action = rule.action if rule else "none"
                 target = rule.target if rule else None
