@@ -38,7 +38,7 @@ class MailboxClient:
 
     def new_messages(self) -> Iterator[ImapMessage]:
         client, uid_validity = self._connected()
-        for uid in client.search(["UNSEEN"]):
+        for uid in client.search(["ALL"]):
             fetched = client.fetch([uid], [b"RFC822"])
             raw = fetched[uid][b"RFC822"]
             yield ImapMessage(uid=uid, uid_validity=uid_validity, raw=raw)

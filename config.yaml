@@ -6,7 +6,7 @@ imap:
   password: ""
   mailbox: INBOX
   spam_folder: Junk
-  poll_interval: 30
+  poll_interval: 180
   connect_timeout: 30
 
 rspamd:

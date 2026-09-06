@@ -65,6 +65,11 @@ class ProcessingState:
             )
             self.connection.commit()
 
+    def reset_processed_messages(self) -> None:
+        with self.lock:
+            self.connection.execute("DELETE FROM processed_messages")
+            self.connection.commit()
+
     def seed_rules(self, rules: tuple[Rule, ...]) -> None:
         with self.lock:
             count = self.connection.execute("SELECT COUNT(*) FROM rules").fetchone()[0]
@@ -97,12 +102,15 @@ class ProcessingState:
                 "INSERT INTO rules (name, condition, action, target, flag) VALUES (?, ?, ?, ?, ?)",
                 (rule.name, rule.condition, rule.action, rule.target, rule.flag),
             )
+            self.connection.execute("DELETE FROM processed_messages")
             self.connection.commit()
             return int(cursor.lastrowid)
 
     def delete_rule(self, rule_id: int) -> bool:
         with self.lock:
             cursor = self.connection.execute("DELETE FROM rules WHERE id = ?", (rule_id,))
+            if cursor.rowcount:
+                self.connection.execute("DELETE FROM processed_messages")
             self.connection.commit()
             return cursor.rowcount > 0
 
