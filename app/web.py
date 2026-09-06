@@ -31,10 +31,11 @@ def create_app(state: ProcessingState) -> Flask:
         payload = request.get_json(silent=True) or {}
         try:
             condition = _condition_from_fields(payload)
+            action = str(payload["action"]).strip()
             rule = Rule(
-                name=str(payload["name"]).strip(),
+                name=_optional_string(payload.get("name")) or _generated_rule_name(payload, action),
                 condition=condition,
-                action=str(payload["action"]).strip(),
+                action=action,
                 target=_optional_string(payload.get("target")),
                 flag=_optional_string(payload.get("flag")),
             )
@@ -81,3 +82,15 @@ def _condition_from_fields(payload: dict[str, Any]) -> str:
         if value:
             conditions.append(f"contains({context_name}, {value!r})")
     return " and ".join(conditions)
+
+
+def _generated_rule_name(payload: dict[str, Any], action: str) -> str:
+    fields = (
+        ("subject", "subject"),
+        ("text", "message"),
+        ("from_addr", "from address"),
+        ("from_name", "sender name"),
+    )
+    parameters = [f"{label} contains {value}" for field, label in fields
+                  if (value := _optional_string(payload.get(field)))]
+    return f"{action.capitalize()}: {' and '.join(parameters)}"

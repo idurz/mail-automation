@@ -24,8 +24,8 @@
   <p class="muted">Rules are evaluated in listed order after Rspamd allows a message through.</p>
   <h2>Add Rule</h2>
   <form id="rule-form">
-    <label class="field"><span>Name</span><input name="name" required placeholder="Move invoices"></label>
-    <label class="field"><span>Action</span><select name="action"><option value="move">Move</option><option value="none">Leave in inbox</option><option value="delete">Delete</option><option value="flag">Flag</option></select></label>
+    <label class="field"><span>Name</span><input name="name" placeholder="Automatic from filters"></label>
+    <label class="field"><span>Action</span><select name="action"><option value="delete" selected>Delete</option><option value="move">Move</option><option value="none">Leave in inbox</option><option value="flag">Flag</option></select></label>
     <label class="field"><span>Subject contains</span><input name="subject" placeholder="invoice"></label>
     <label class="field"><span>Message contains</span><input name="text" placeholder="payment details"></label>
     <label class="field"><span>From address contains</span><input name="from_addr" placeholder="vendor@example.com"></label>
@@ -60,7 +60,7 @@
     function makeRule(index) {
       const action = recentActions[index];
       const form = document.querySelector('#rule-form');
-      form.elements.name.value = `Rule for ${action.sender || action.subject}`;
+      form.elements.name.value = '';
       form.elements.subject.value = action.subject || '';
       form.elements.text.value = '';
       form.elements.from_addr.value = action.sender || '';
