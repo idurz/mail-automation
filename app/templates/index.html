@@ -9,10 +9,12 @@
     body { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
     h1 { margin-bottom: .25rem; } h2 { margin-top: 2rem; }
     form, table { width: 100%; border-collapse: collapse; background: #fff; }
-    form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; padding: 1rem; box-sizing: border-box; }
-    label { display: grid; gap: .25rem; font: 600 .85rem sans-serif; }
-    .wide { grid-column: span 2; } input, select, button { padding: .55rem; font: inherit; }
+    form { display: grid; gap: .6rem; padding: 1rem; box-sizing: border-box; }
+    .field { display: grid; grid-template-columns: 10rem minmax(0, 1fr); align-items: center; gap: .6rem; font: 600 .85rem sans-serif; }
+    .field span { text-align: right; } .hidden { display: none; }
+    input, select, button { padding: .4rem .55rem; font: inherit; }
     button { background: #145a4f; color: white; border: 0; cursor: pointer; } button.delete { background: #9b2c2c; }
+    .icon-button { width: 2.25rem; height: 2.25rem; padding: 0; font-size: 1.1rem; line-height: 1; }
     th, td { padding: .6rem; border-bottom: 1px solid #d8ded8; text-align: left; vertical-align: top; } th { background: #dfe8dd; }
     .table-wrap { overflow-x: auto; } .muted { color: #52676a; }
   </style>
@@ -22,16 +24,15 @@
   <p class="muted">Rules are evaluated in listed order after Rspamd allows a message through.</p>
   <h2>Add Rule</h2>
   <form id="rule-form">
-    <label>Name<input name="name" required placeholder="Move invoices"></label>
-    <label>Action<select name="action"><option value="move">Move</option><option value="copy">Copy</option><option value="none">Leave in inbox</option><option value="delete">Delete</option><option value="flag">Flag</option></select></label>
-    <label class="wide">Match<select name="match"><option value="all">All of the following conditions</option><option value="any">Any of the following conditions</option></select></label>
-    <label class="wide">Subject contains<input name="subject" placeholder="invoice"></label>
-    <label class="wide">Message content contains<input name="text" placeholder="payment details"></label>
-    <label class="wide">From contains<input name="from_addr" placeholder="vendor@example.com"></label>
-    <label class="wide">Sender name contains<input name="from_name" placeholder="Acme Accounts"></label>
-    <label>Target folder<input name="target" placeholder="Finance"></label>
-    <label>Flag<input name="flag" placeholder="\\Flagged"></label>
-    <button class="wide" type="submit">Add rule</button>
+    <label class="field"><span>Name</span><input name="name" required placeholder="Move invoices"></label>
+    <label class="field"><span>Action</span><select name="action"><option value="move">Move</option><option value="none">Leave in inbox</option><option value="delete">Delete</option><option value="flag">Flag</option></select></label>
+    <label class="field"><span>Subject contains</span><input name="subject" placeholder="invoice"></label>
+    <label class="field"><span>Message contains</span><input name="text" placeholder="payment details"></label>
+    <label class="field"><span>From address contains</span><input name="from_addr" placeholder="vendor@example.com"></label>
+    <label class="field"><span>Sender name contains</span><input name="from_name" placeholder="Acme Accounts"></label>
+    <label id="target-field" class="field"><span>Target folder</span><input name="target" placeholder="Finance"></label>
+    <label id="flag-field" class="field hidden"><span>Flag</span><input name="flag" placeholder="\\Flagged"></label>
+    <button type="submit">Add rule</button>
   </form>
   <h2>Rules</h2>
   <div class="table-wrap"><table><thead><tr><th>Name</th><th>Condition</th><th>Action</th><th>Target</th><th></th></tr></thead><tbody id="rules"></tbody></table></div>
@@ -42,11 +43,16 @@
     let recentActions = [];
     async function load() {
       const [rules, actions] = await Promise.all(['/api/rules', '/api/actions'].map(url => fetch(url).then(response => response.json())));
-      document.querySelector('#rules').innerHTML = rules.map(rule => `<tr><td>${escapeHtml(rule.name)}</td><td>${escapeHtml(rule.condition)}</td><td>${escapeHtml(rule.action)}</td><td>${escapeHtml(rule.target)}</td><td><button class="delete" onclick="removeRule(${rule.id})">Delete</button></td></tr>`).join('');
+      document.querySelector('#rules').innerHTML = rules.map(rule => `<tr><td>${escapeHtml(rule.name)}</td><td>${escapeHtml(rule.condition)}</td><td>${escapeHtml(rule.action)}</td><td>${escapeHtml(rule.target)}</td><td><button class="delete icon-button" type="button" aria-label="Delete rule" title="Delete rule" onclick="removeRule(${rule.id})">&#215;</button></td></tr>`).join('');
       recentActions = actions;
-      document.querySelector('#actions').innerHTML = actions.map((action, index) => `<tr><td>${escapeHtml(action.created_at)}</td><td>${escapeHtml(action.subject)}</td><td>${escapeHtml(action.sender)}</td><td>${escapeHtml(action.rspamd_score)} ${escapeHtml(action.rspamd_action)}</td><td>${escapeHtml(action.rule_name)}: ${escapeHtml(action.action)} ${escapeHtml(action.target)}</td><td><button type="button" onclick="makeRule(${index})">Make rule</button></td></tr>`).join('');
+      document.querySelector('#actions').innerHTML = actions.map((action, index) => `<tr><td>${escapeHtml(action.created_at)}</td><td>${escapeHtml(action.subject)}</td><td>${escapeHtml(action.sender)}</td><td>${escapeHtml(action.rspamd_score)} ${escapeHtml(action.rspamd_action)}</td><td>${escapeHtml(action.rule_name)}: ${escapeHtml(action.action)} ${escapeHtml(action.target)}</td><td><button class="icon-button" type="button" aria-label="Create rule from this action" title="Create rule" onclick="makeRule(${index})">&#9998;</button></td></tr>`).join('');
     }
     async function removeRule(id) { await fetch(`/api/rules/${id}`, {method: 'DELETE'}); load(); }
+    function updateActionFields() {
+      const action = document.querySelector('#rule-form').elements.action.value;
+      document.querySelector('#target-field').classList.toggle('hidden', action !== 'move');
+      document.querySelector('#flag-field').classList.toggle('hidden', action !== 'flag');
+    }
     function makeRule(index) {
       const action = recentActions[index];
       const form = document.querySelector('#rule-form');
@@ -55,6 +61,7 @@
       form.elements.text.value = '';
       form.elements.from_addr.value = action.sender || '';
       form.elements.from_name.value = '';
+      updateActionFields();
       form.scrollIntoView({behavior: 'smooth', block: 'start'});
       form.elements.action.focus();
     }
@@ -64,6 +71,8 @@
       if (!response.ok) { alert((await response.json()).error); return; }
       event.target.reset(); load();
     });
+    document.querySelector('#rule-form').elements.action.addEventListener('change', updateActionFields);
+    updateActionFields();
     load(); setInterval(load, 10000);
   </script>
 </body>

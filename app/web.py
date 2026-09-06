@@ -80,5 +80,4 @@ def _condition_from_fields(payload: dict[str, Any]) -> str:
         value = _optional_string(payload.get(field))
         if value:
             conditions.append(f"contains({context_name}, {value!r})")
-    joiner = " or " if payload.get("match") == "any" else " and "
-    return joiner.join(conditions)
+    return " and ".join(conditions)
