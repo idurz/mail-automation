@@ -1,6 +1,6 @@
 services:
   mail-automation:
-    build: .
+    image: ghcr.io/idurz/mail-automation:latest
     restart: unless-stopped
     environment:
       IMAP_HOST: ${IMAP_HOST:?Set IMAP_HOST to the bare IMAP hostname}
