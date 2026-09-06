@@ -67,7 +67,12 @@ def run(config_path: str) -> None:
                         LOGGER.info("uid=%s rule=%s action=%s score=%.2f", item.uid, rule_name, action, result.score)
                     time.sleep(config.imap.poll_interval)
             except (OSError, RuleError, ValueError) as error:
-                LOGGER.exception("processing failure; reconnecting: %s", error)
+                LOGGER.exception(
+                    "processing failure for IMAP host=%r port=%s; reconnecting: %s",
+                    config.imap.host,
+                    config.imap.port,
+                    error,
+                )
                 mailbox.close()
                 if RUNNING:
                     time.sleep(config.imap.poll_interval)
