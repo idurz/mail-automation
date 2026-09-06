@@ -24,9 +24,10 @@
   <form id="rule-form">
     <label>Name<input name="name" required placeholder="Move invoices"></label>
     <label>Action<select name="action"><option value="move">Move</option><option value="copy">Copy</option><option value="none">Leave in inbox</option><option value="delete">Delete</option><option value="flag">Flag</option></select></label>
+    <label class="wide">Match<select name="match"><option value="all">All of the following conditions</option><option value="any">Any of the following conditions</option></select></label>
     <label class="wide">Subject contains<input name="subject" placeholder="invoice"></label>
-    <label class="wide">Message text contains<input name="text" placeholder="payment details"></label>
-    <label class="wide">Sender address contains<input name="from_addr" placeholder="vendor@example.com"></label>
+    <label class="wide">Message content contains<input name="text" placeholder="payment details"></label>
+    <label class="wide">From contains<input name="from_addr" placeholder="vendor@example.com"></label>
     <label>Target folder<input name="target" placeholder="Finance"></label>
     <label>Flag<input name="flag" placeholder="\\Flagged"></label>
     <button class="wide" type="submit">Add rule</button>
