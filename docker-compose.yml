@@ -3,8 +3,10 @@ services:
     build: .
     restart: unless-stopped
     environment:
-      IMAP_USERNAME: ${IMAP_USERNAME}
-      IMAP_PASSWORD: ${IMAP_PASSWORD}
+      IMAP_HOST: ${IMAP_HOST:?Set IMAP_HOST to the bare IMAP hostname}
+      IMAP_PORT: ${IMAP_PORT:?Set IMAP_PORT to the IMAP server port}
+      IMAP_USERNAME: ${IMAP_USERNAME:?Set IMAP_USERNAME}
+      IMAP_PASSWORD: ${IMAP_PASSWORD:?Set IMAP_PASSWORD}
       RSPAMD_PASSWORD: ${RSPAMD_PASSWORD:-}
     ports:
       - "127.0.0.1:8080:8080"
