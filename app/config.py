@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 import os
 from pathlib import Path
 from typing import Any
@@ -44,7 +45,7 @@ class Rule:
 
 @dataclass(frozen=True)
 class Config:
-    imap: ImapConfig
+    imap_accounts: tuple[ImapConfig, ...]
     rspamd: RspamdConfig
     state: StateConfig
     rules: tuple[Rule, ...]
@@ -57,32 +58,13 @@ def load_config(path: str | Path) -> Config:
         raw: dict[str, Any] = yaml.safe_load(config_file) or {}
 
     imap = raw["imap"]
-    host = _environment_or_config("IMAP_HOST", imap.get("host"))
-    username = _environment_or_config("IMAP_USERNAME", imap.get("username"))
-    password = _environment_or_config("IMAP_PASSWORD", imap.get("password"))
-    port = _imap_port(_environment_or_config("IMAP_PORT", imap.get("port", 993)))
-    if not host:
-        raise ValueError("IMAP host is required: set IMAP_HOST or imap.host")
-    if not username:
-        raise ValueError("IMAP username is required: set IMAP_USERNAME or imap.username")
-    if not password:
-        raise ValueError("IMAP password is required: set IMAP_PASSWORD or imap.password")
     rspamd = raw["rspamd"]
     state = raw.get("state", {})
     logging = raw.get("logging", {})
     web = raw.get("web", {})
     rules = tuple(Rule(**rule) for rule in raw.get("rules", []))
     return Config(
-        imap=ImapConfig(
-            host=host,
-            port=port,
-            ssl=imap.get("ssl", True),
-            username=username,
-            password=password,
-            mailbox=imap.get("mailbox", "INBOX"), spam_folder=imap.get("spam_folder", "Junk"),
-            poll_interval=imap.get("poll_interval", 30),
-            connect_timeout=imap.get("connect_timeout", 30),
-        ),
+        imap_accounts=_imap_accounts(imap),
         rspamd=RspamdConfig(
             url=_environment_or_config("RSPAMD_URL", rspamd["url"]).rstrip("/"),
             password=os.environ.get("RSPAMD_PASSWORD", rspamd.get("password")),
@@ -98,6 +80,47 @@ def load_config(path: str | Path) -> Config:
 def _environment_or_config(name: str, fallback: Any) -> Any:
     value = os.environ.get(name)
     return value if value else fallback
+
+
+def _imap_accounts(defaults: dict[str, Any]) -> tuple[ImapConfig, ...]:
+    encoded_accounts = os.environ.get("IMAP_ACCOUNTS")
+    if encoded_accounts:
+        try:
+            accounts = json.loads(encoded_accounts)
+        except json.JSONDecodeError as error:
+            raise ValueError("IMAP_ACCOUNTS must be a JSON list of account objects") from error
+        if not isinstance(accounts, list) or not accounts or not all(isinstance(account, dict) for account in accounts):
+            raise ValueError("IMAP_ACCOUNTS must be a non-empty JSON list of account objects")
+        return tuple(_imap_config(account, defaults) for account in accounts)
+    return (_imap_config({
+        "host": _environment_or_config("IMAP_HOST", defaults.get("host")),
+        "port": _environment_or_config("IMAP_PORT", defaults.get("port", 993)),
+        "username": _environment_or_config("IMAP_USERNAME", defaults.get("username")),
+        "password": _environment_or_config("IMAP_PASSWORD", defaults.get("password")),
+    }, defaults),)
+
+
+def _imap_config(account: dict[str, Any], defaults: dict[str, Any]) -> ImapConfig:
+    host = account.get("host")
+    username = account.get("username")
+    password = account.get("password")
+    if not host:
+        raise ValueError("each IMAP account requires host")
+    if not username:
+        raise ValueError("each IMAP account requires username")
+    if not password:
+        raise ValueError("each IMAP account requires password")
+    return ImapConfig(
+        host=str(host),
+        port=_imap_port(account.get("port", defaults.get("port", 993))),
+        ssl=bool(account.get("ssl", defaults.get("ssl", True))),
+        username=str(username),
+        password=str(password),
+        mailbox=str(account.get("mailbox", defaults.get("mailbox", "INBOX"))),
+        spam_folder=str(account.get("spam_folder", defaults.get("spam_folder", "Junk"))),
+        poll_interval=int(account.get("poll_interval", defaults.get("poll_interval", 30))),
+        connect_timeout=int(account.get("connect_timeout", defaults.get("connect_timeout", 30))),
+    )
 
 
 def _imap_port(value: Any) -> int:
