@@ -35,15 +35,27 @@
   <h2>Rules</h2>
   <div class="table-wrap"><table><thead><tr><th>Name</th><th>Condition</th><th>Action</th><th>Target</th><th></th></tr></thead><tbody id="rules"></tbody></table></div>
   <h2>Recent Actions</h2>
-  <div class="table-wrap"><table><thead><tr><th>Time</th><th>Subject</th><th>Sender</th><th>Rspamd</th><th>Result</th></tr></thead><tbody id="actions"></tbody></table></div>
+  <div class="table-wrap"><table><thead><tr><th>Time</th><th>Subject</th><th>Sender</th><th>Rspamd</th><th>Result</th><th></th></tr></thead><tbody id="actions"></tbody></table></div>
   <script>
     const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]));
+    let recentActions = [];
     async function load() {
       const [rules, actions] = await Promise.all(['/api/rules', '/api/actions'].map(url => fetch(url).then(response => response.json())));
       document.querySelector('#rules').innerHTML = rules.map(rule => `<tr><td>${escapeHtml(rule.name)}</td><td>${escapeHtml(rule.condition)}</td><td>${escapeHtml(rule.action)}</td><td>${escapeHtml(rule.target)}</td><td><button class="delete" onclick="removeRule(${rule.id})">Delete</button></td></tr>`).join('');
-      document.querySelector('#actions').innerHTML = actions.map(action => `<tr><td>${escapeHtml(action.created_at)}</td><td>${escapeHtml(action.subject)}</td><td>${escapeHtml(action.sender)}</td><td>${escapeHtml(action.rspamd_score)} ${escapeHtml(action.rspamd_action)}</td><td>${escapeHtml(action.rule_name)}: ${escapeHtml(action.action)} ${escapeHtml(action.target)}</td></tr>`).join('');
+      recentActions = actions;
+      document.querySelector('#actions').innerHTML = actions.map((action, index) => `<tr><td>${escapeHtml(action.created_at)}</td><td>${escapeHtml(action.subject)}</td><td>${escapeHtml(action.sender)}</td><td>${escapeHtml(action.rspamd_score)} ${escapeHtml(action.rspamd_action)}</td><td>${escapeHtml(action.rule_name)}: ${escapeHtml(action.action)} ${escapeHtml(action.target)}</td><td><button type="button" onclick="makeRule(${index})">Make rule</button></td></tr>`).join('');
     }
     async function removeRule(id) { await fetch(`/api/rules/${id}`, {method: 'DELETE'}); load(); }
+    function makeRule(index) {
+      const action = recentActions[index];
+      const form = document.querySelector('#rule-form');
+      form.elements.name.value = `Rule for ${action.sender || action.subject}`;
+      form.elements.subject.value = action.subject || '';
+      form.elements.text.value = '';
+      form.elements.from_addr.value = action.sender || '';
+      form.scrollIntoView({behavior: 'smooth', block: 'start'});
+      form.elements.action.focus();
+    }
     document.querySelector('#rule-form').addEventListener('submit', async event => {
       event.preventDefault(); const values = Object.fromEntries(new FormData(event.target));
       const response = await fetch('/api/rules', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(values)});
