@@ -33,8 +33,8 @@ def configure_logging(level: str) -> None:
 
 def run(config_path: str) -> None:
     config = load_config(config_path)
-    print(f"Loaded configuration from {config_path}")
-    print(f"IMAP host: {config.imap.host}:{config.imap.port} mailbox: {config.imap.mailbox}")
+    LOGGER.info(f"Loaded configuration from {config_path}")
+    LOGGER.info(f"IMAP host: {config.imap.host}:{config.imap.port} mailbox: {config.imap.mailbox}")
 
     configure_logging(config.log_level)
     state = ProcessingState(config.state.db_path)
