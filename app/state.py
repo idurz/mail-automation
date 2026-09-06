@@ -68,6 +68,7 @@ class ProcessingState:
     def reset_processed_messages(self) -> None:
         with self.lock:
             self.connection.execute("DELETE FROM processed_messages")
+            self.connection.execute("DELETE FROM action_log")
             self.connection.commit()
 
     def seed_rules(self, rules: tuple[Rule, ...]) -> None:
