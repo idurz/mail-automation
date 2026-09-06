@@ -28,6 +28,7 @@
     <label class="wide">Subject contains<input name="subject" placeholder="invoice"></label>
     <label class="wide">Message content contains<input name="text" placeholder="payment details"></label>
     <label class="wide">From contains<input name="from_addr" placeholder="vendor@example.com"></label>
+    <label class="wide">Sender name contains<input name="from_name" placeholder="Acme Accounts"></label>
     <label>Target folder<input name="target" placeholder="Finance"></label>
     <label>Flag<input name="flag" placeholder="\\Flagged"></label>
     <button class="wide" type="submit">Add rule</button>
@@ -53,6 +54,7 @@
       form.elements.subject.value = action.subject || '';
       form.elements.text.value = '';
       form.elements.from_addr.value = action.sender || '';
+      form.elements.from_name.value = '';
       form.scrollIntoView({behavior: 'smooth', block: 'start'});
       form.elements.action.focus();
     }

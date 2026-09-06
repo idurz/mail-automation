@@ -11,6 +11,7 @@ from email.utils import parseaddr
 class ParsedEmail:
     subject: str
     from_addr: str
+    from_name: str
     to_addr: str
     message_id: str
     text: str
@@ -19,9 +20,11 @@ class ParsedEmail:
 
 def parse_email(raw_message: bytes) -> ParsedEmail:
     message: EmailMessage = BytesParser(policy=policy.default).parsebytes(raw_message)
+    from_name, from_addr = parseaddr(str(message.get("From", "")))
     return ParsedEmail(
         subject=str(message.get("Subject", "")),
-        from_addr=parseaddr(str(message.get("From", "")))[1],
+        from_addr=from_addr,
+        from_name=from_name,
         to_addr=parseaddr(str(message.get("To", "")))[1],
         message_id=str(message.get("Message-ID", "")),
         text=_plain_text(message),

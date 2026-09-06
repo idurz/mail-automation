@@ -27,6 +27,7 @@ class RuleEvaluator:
             "subject": message.subject,
             "text": message.text,
             "from_addr": message.from_addr,
+            "from_name": message.from_name,
             "to_addr": message.to_addr,
             "size": message.size,
             "symbols": result.symbols,

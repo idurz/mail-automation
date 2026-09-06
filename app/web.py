@@ -73,6 +73,7 @@ def _condition_from_fields(payload: dict[str, Any]) -> str:
         ("subject", "subject"),
         ("text", "text"),
         ("from_addr", "from_addr"),
+        ("from_name", "from_name"),
     )
     conditions = []
     for field, context_name in fields:

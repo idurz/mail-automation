@@ -27,7 +27,8 @@ web:
 # Rspamd suggestions are handled before these ordered rules. A reject, soft
 # reject, add-header, rewrite-subject decision, or score at its threshold moves
 # mail to imap.spam_folder. Use contains(subject, 'word'), contains(text,
-# 'word'), contains(from_addr, 'name@example.com'), and score comparisons here.
+# 'word'), contains(from_addr, 'name@example.com'), contains(from_name,
+# 'Sender Name'), and score comparisons here.
 rules:
   - name: move_invoices
     condition: "contains(subject, 'invoice') or contains(text, 'invoice')"
