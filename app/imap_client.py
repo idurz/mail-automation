@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass
+import imaplib
 import ssl
 
 from imapclient import IMAPClient
@@ -66,6 +67,8 @@ class MailboxClient:
         if self.client is not None:
             try:
                 self.client.logout()
+            except (OSError, imaplib.IMAP4.abort):
+                pass
             finally:
                 self.client = None
                 self.uid_validity = None
