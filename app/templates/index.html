@@ -40,10 +40,14 @@
   <div class="table-wrap"><table><thead><tr><th>Time</th><th>Subject</th><th>Sender</th><th>Rspamd</th><th>Result</th><th></th></tr></thead><tbody id="actions"></tbody></table></div>
   <script>
     const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]));
+    const formatCondition = condition => String(condition ?? '').replace(
+      /contains\((\w+),\s*('(?:\\.|[^'])*'|"(?:\\.|[^"])*")\)/g,
+      '$1 = $2',
+    );
     let recentActions = [];
     async function load() {
       const [rules, actions] = await Promise.all(['/api/rules', '/api/actions'].map(url => fetch(url).then(response => response.json())));
-      document.querySelector('#rules').innerHTML = rules.map(rule => `<tr><td>${escapeHtml(rule.name)}</td><td>${escapeHtml(rule.condition)}</td><td>${escapeHtml(rule.action)}</td><td>${escapeHtml(rule.target)}</td><td><button class="delete icon-button" type="button" aria-label="Delete rule" title="Delete rule" onclick="removeRule(${rule.id})">&#215;</button></td></tr>`).join('');
+      document.querySelector('#rules').innerHTML = rules.map(rule => `<tr><td>${escapeHtml(rule.name)}</td><td>${escapeHtml(formatCondition(rule.condition))}</td><td>${escapeHtml(rule.action)}</td><td>${escapeHtml(rule.target)}</td><td><button class="delete icon-button" type="button" aria-label="Delete rule" title="Delete rule" onclick="removeRule(${rule.id})">&#215;</button></td></tr>`).join('');
       recentActions = actions;
       document.querySelector('#actions').innerHTML = actions.map((action, index) => `<tr><td>${escapeHtml(action.created_at)}</td><td>${escapeHtml(action.subject)}</td><td>${escapeHtml(action.sender)}</td><td>${escapeHtml(action.rspamd_score)} ${escapeHtml(action.rspamd_action)}</td><td>${escapeHtml(action.rule_name)}: ${escapeHtml(action.action)} ${escapeHtml(action.target)}</td><td><button class="icon-button" type="button" aria-label="Create rule from this action" title="Create rule" onclick="makeRule(${index})">&#9998;</button></td></tr>`).join('');
     }
