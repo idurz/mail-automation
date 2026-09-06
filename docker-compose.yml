@@ -1,4 +1,10 @@
 services:
+  rspamd:
+    image: rspamd/rspamd:latest
+    restart: unless-stopped
+    volumes:
+      - rspamd-data:/var/lib/rspamd
+
   mail-automation:
     image: ghcr.io/idurz/mail-automation:latest
     restart: unless-stopped
@@ -7,7 +13,7 @@ services:
       IMAP_PORT: ${IMAP_PORT:?Set IMAP_PORT to the IMAP server port}
       IMAP_USERNAME: ${IMAP_USERNAME:?Set IMAP_USERNAME}
       IMAP_PASSWORD: ${IMAP_PASSWORD:?Set IMAP_PASSWORD}
-      RSPAMD_URL: ${RSPAMD_URL:?Set RSPAMD_URL to the reachable Rspamd HTTP URL}
+      RSPAMD_URL: http://rspamd:11333
       RSPAMD_PASSWORD: ${RSPAMD_PASSWORD:-}
     ports:
       - "127.0.0.1:8080:8080"
@@ -16,4 +22,5 @@ services:
 
 volumes:
   mail-automation-data:
+  rspamd-data:
  
