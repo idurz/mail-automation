@@ -30,9 +30,10 @@ def create_app(state: ProcessingState) -> Flask:
     def add_rule() -> Any:
         payload = request.get_json(silent=True) or {}
         try:
+            condition = _condition_from_fields(payload)
             rule = Rule(
                 name=str(payload["name"]).strip(),
-                condition=str(payload["condition"]).strip(),
+                condition=condition,
                 action=str(payload["action"]).strip(),
                 target=_optional_string(payload.get("target")),
                 flag=_optional_string(payload.get("flag")),
@@ -40,7 +41,7 @@ def create_app(state: ProcessingState) -> Flask:
         except KeyError as error:
             return jsonify(error=f"missing field: {error.args[0]}"), 400
         if not rule.name or not rule.condition or rule.action not in VALID_ACTIONS:
-            return jsonify(error="name, condition, and a valid action are required"), 400
+            return jsonify(error="name, at least one condition, and a valid action are required"), 400
         if rule.action in {"move", "copy"} and not rule.target:
             return jsonify(error=f"{rule.action} requires a target folder"), 400
         return jsonify(id=state.add_rule(rule)), 201
@@ -65,3 +66,17 @@ def start_server(state: ProcessingState, port: int) -> Thread:
 
 def _optional_string(value: object) -> str | None:
     return str(value).strip() or None if value is not None else None
+
+
+def _condition_from_fields(payload: dict[str, Any]) -> str:
+    fields = (
+        ("subject", "subject"),
+        ("text", "text"),
+        ("from_addr", "from_addr"),
+    )
+    conditions = []
+    for field, context_name in fields:
+        value = _optional_string(payload.get(field))
+        if value:
+            conditions.append(f"contains({context_name}, {value!r})")
+    return " and ".join(conditions)
