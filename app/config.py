@@ -84,7 +84,7 @@ def load_config(path: str | Path) -> Config:
             connect_timeout=imap.get("connect_timeout", 30),
         ),
         rspamd=RspamdConfig(
-            url=rspamd["url"].rstrip("/"),
+            url=_environment_or_config("RSPAMD_URL", rspamd["url"]).rstrip("/"),
             password=os.environ.get("RSPAMD_PASSWORD", rspamd.get("password")),
             timeout=rspamd.get("timeout", 30),
         ),
