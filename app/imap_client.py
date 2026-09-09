@@ -39,9 +39,11 @@ class MailboxClient:
     def new_messages(self) -> Iterator[ImapMessage]:
         client, uid_validity = self._connected()
         for uid in client.search(["ALL"]):
-            fetched = client.fetch([uid], [b"RFC822"])
-            raw = fetched[uid][b"RFC822"]
-            yield ImapMessage(uid=uid, uid_validity=uid_validity, raw=raw)
+            fetched = client.fetch([uid], [b"BODY.PEEK[]"])
+            message_data = fetched[uid]
+            raw = message_data.get(b"BODY.PEEK[]") or message_data.get(b"BODY[]") or message_data.get(b"RFC822")
+            if raw is not None:
+                yield ImapMessage(uid=uid, uid_validity=uid_validity, raw=raw)
 
     def execute_action(self, uid: int, action: str, target: str | None, flag: str | None) -> None:
         client, _ = self._connected()
