@@ -78,10 +78,15 @@ def _condition_from_fields(payload: dict[str, Any]) -> str:
     )
     conditions = []
     for field, context_name in fields:
-        value = _optional_string(payload.get(field))
+        value = _filter_string(payload.get(field))
         if value:
             conditions.append(f"contains({context_name}, {value!r})")
     return " and ".join(conditions)
+
+
+def _filter_string(value: object) -> str | None:
+    text = str(value) if value is not None else None
+    return text if text and not text.isspace() else None
 
 
 def _generated_rule_name(payload: dict[str, Any], action: str) -> str:
