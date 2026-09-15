@@ -8,7 +8,7 @@ from flask import Flask, jsonify, render_template, request
 from .config import Rule
 from .state import ProcessingState
 
-VALID_ACTIONS = {"none", "move", "copy", "delete", "flag"}
+VALID_ACTIONS = {"none", "move", "copy", "delete", "flag", "paperless"}
 
 
 def create_app(state: ProcessingState) -> Flask:
@@ -43,7 +43,7 @@ def create_app(state: ProcessingState) -> Flask:
             return jsonify(error=f"missing field: {error.args[0]}"), 400
         if not rule.name or not rule.condition or rule.action not in VALID_ACTIONS:
             return jsonify(error="name, at least one condition, and a valid action are required"), 400
-        if rule.action in {"move", "copy"} and not rule.target:
+        if rule.action in {"move", "copy", "paperless"} and not rule.target:
             return jsonify(error=f"{rule.action} requires a target folder"), 400
         return jsonify(id=state.add_rule(rule)), 201
 

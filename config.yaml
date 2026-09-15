@@ -14,6 +14,13 @@ rspamd:
   password: ""
   timeout: 30
 
+# Optional: upload attachments to a Paperless-ngx instance with the
+# 'paperless' rule action. Leave url empty to disable the integration.
+paperless:
+  url: ""
+  token: ""
+  timeout: 30
+
 state:
   db_path: /data/state.db
 
@@ -28,9 +35,29 @@ web:
 # reject, add-header, rewrite-subject decision, or score at its threshold moves
 # mail to imap.spam_folder. Use contains(subject, 'word'), contains(text,
 # 'word'), contains(from_addr, 'name@example.com'), contains(from_name,
-# 'Sender Name'), and score comparisons here.
+# 'Sender Name'), age_days (float days since the message arrived), unread
+# (true if the \Seen flag is not set), and score comparisons here. Messages
+# left unmatched (action 'none' or no rule matched) are re-checked on every
+# poll, so age-based conditions keep being evaluated as messages get older.
+# The 'paperless' action uploads each attachment to Paperless (target folder
+# still required, e.g. Archive) and then moves the message out of the inbox
+# to that folder.
 rules:
   - name: move_invoices
     condition: "contains(subject, 'invoice') or contains(text, 'invoice')"
     action: move
     target: Finance
+  - name: archive_attachments_to_paperless
+    condition: "contains(subject, 'statement')"
+    action: paperless
+    target: Archive
+  - name: delete_unread_after_30_days
+    condition: "unread and age_days >= 30"
+    action: delete
+  - name: delete_older_than_1_year
+    condition: "age_days >= 365"
+    action: delete
+  - name: delete_old_newsletters
+    condition: "age_days >= 14 and contains(from_addr, 'newsletter@x.com')"
+    action: delete
+

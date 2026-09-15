@@ -6,7 +6,8 @@ services:
       - rspamd-data:/var/lib/rspamd
 
   mail-automation:
-    image: ghcr.io/idurz/mail-automation:latest
+    build: .
+    image: mail-automation:local
     restart: unless-stopped
     environment:
       IMAP_ACCOUNTS: ${IMAP_ACCOUNTS:?Set IMAP_ACCOUNTS to a JSON list of IMAP accounts}

@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 from app.config import ImapConfig
@@ -18,10 +19,16 @@ def test_new_messages_peeks_body_without_setting_seen_flag():
     )
     mailbox_client = MailboxClient(config)
 
+    internal_date = datetime(2024, 1, 1, tzinfo=timezone.utc)
     mock_client = MagicMock()
     mock_client.search.return_value = [101]
     mock_client.fetch.return_value = {
-        101: {b"SEQ": 1, b"BODY[]": b"From: test@example.com\r\nSubject: Test\r\n\r\nHello"}
+        101: {
+            b"SEQ": 1,
+            b"BODY[]": b"From: test@example.com\r\nSubject: Test\r\n\r\nHello",
+            b"INTERNALDATE": internal_date,
+            b"FLAGS": (b"\\Seen",),
+        }
     }
     mailbox_client.client = mock_client
     mailbox_client.uid_validity = 12345
@@ -33,5 +40,7 @@ def test_new_messages_peeks_body_without_setting_seen_flag():
         uid=101,
         uid_validity=12345,
         raw=b"From: test@example.com\r\nSubject: Test\r\n\r\nHello",
+        internal_date=internal_date,
+        flags=(b"\\Seen",),
     )
-    mock_client.fetch.assert_called_once_with([101], [b"BODY.PEEK[]"])
+    mock_client.fetch.assert_called_once_with([101], [b"BODY.PEEK[]", b"INTERNALDATE", b"FLAGS"])

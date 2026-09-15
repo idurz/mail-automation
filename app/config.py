@@ -35,6 +35,13 @@ class StateConfig:
 
 
 @dataclass(frozen=True)
+class PaperlessConfig:
+    url: str
+    token: str | None
+    timeout: int
+
+
+@dataclass(frozen=True)
 class Rule:
     name: str
     condition: str
@@ -51,6 +58,7 @@ class Config:
     rules: tuple[Rule, ...]
     log_level: str
     web_port: int
+    paperless: PaperlessConfig | None
 
 
 def load_config(path: str | Path) -> Config:
@@ -74,6 +82,18 @@ def load_config(path: str | Path) -> Config:
         rules=rules,
         log_level=logging.get("level", "INFO").upper(),
         web_port=web.get("port", 8080),
+        paperless=_paperless_config(raw.get("paperless", {})),
+    )
+
+
+def _paperless_config(paperless: dict[str, Any]) -> PaperlessConfig | None:
+    url = _environment_or_config("PAPERLESS_URL", paperless.get("url"))
+    if not url:
+        return None
+    return PaperlessConfig(
+        url=str(url).rstrip("/"),
+        token=os.environ.get("PAPERLESS_TOKEN", paperless.get("token")),
+        timeout=int(paperless.get("timeout", 30)),
     )
 
 

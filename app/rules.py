@@ -14,7 +14,10 @@ class RuleError(ValueError):
 
 
 class RuleEvaluator:
-    def evaluate(self, rule: Rule, message: ParsedEmail, result: RspamdResult) -> bool:
+    def evaluate(
+        self, rule: Rule, message: ParsedEmail, result: RspamdResult,
+        age_days: float = 0.0, unread: bool = False,
+    ) -> bool:
         expression = rule.condition.strip()
         if expression.lower() == "true":
             return True
@@ -31,6 +34,8 @@ class RuleEvaluator:
             "to_addr": message.to_addr,
             "size": message.size,
             "symbols": result.symbols,
+            "age_days": age_days,
+            "unread": unread,
             "has_symbol": lambda name: name in result.symbols,
             "contains": lambda value, text: str(text).casefold() in str(value).casefold(),
         }

@@ -8,6 +8,13 @@ from email.utils import parseaddr
 
 
 @dataclass(frozen=True)
+class Attachment:
+    filename: str
+    content_type: str
+    content: bytes
+
+
+@dataclass(frozen=True)
 class ParsedEmail:
     subject: str
     from_addr: str
@@ -16,6 +23,7 @@ class ParsedEmail:
     message_id: str
     text: str
     size: int
+    attachments: tuple[Attachment, ...] = ()
 
 
 def parse_email(raw_message: bytes) -> ParsedEmail:
@@ -29,6 +37,7 @@ def parse_email(raw_message: bytes) -> ParsedEmail:
         message_id=str(message.get("Message-ID", "")),
         text=_plain_text(message),
         size=len(raw_message),
+        attachments=_attachments(message),
     )
 
 
@@ -39,3 +48,21 @@ def _plain_text(message: EmailMessage) -> str:
         for part in parts
         if part.get_content_type() == "text/plain" and not part.get_content_disposition()
     )
+
+
+def _attachments(message: EmailMessage) -> tuple[Attachment, ...]:
+    if not message.is_multipart():
+        return ()
+    attachments = []
+    for part in message.walk():
+        if part.get_content_disposition() != "attachment":
+            continue
+        content = part.get_content()
+        if isinstance(content, str):
+            content = content.encode("utf-8")
+        attachments.append(Attachment(
+            filename=part.get_filename() or "attachment",
+            content_type=part.get_content_type(),
+            content=content,
+        ))
+    return tuple(attachments)

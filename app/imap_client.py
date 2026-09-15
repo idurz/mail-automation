@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass
+from datetime import datetime
 import imaplib
 import ssl
 
@@ -15,6 +16,8 @@ class ImapMessage:
     uid: int
     uid_validity: int
     raw: bytes
+    internal_date: datetime | None = None
+    flags: tuple[bytes, ...] = ()
 
 
 class MailboxClient:
@@ -39,11 +42,17 @@ class MailboxClient:
     def new_messages(self) -> Iterator[ImapMessage]:
         client, uid_validity = self._connected()
         for uid in client.search(["ALL"]):
-            fetched = client.fetch([uid], [b"BODY.PEEK[]"])
+            fetched = client.fetch([uid], [b"BODY.PEEK[]", b"INTERNALDATE", b"FLAGS"])
             message_data = fetched[uid]
             raw = message_data.get(b"BODY.PEEK[]") or message_data.get(b"BODY[]") or message_data.get(b"RFC822")
             if raw is not None:
-                yield ImapMessage(uid=uid, uid_validity=uid_validity, raw=raw)
+                yield ImapMessage(
+                    uid=uid,
+                    uid_validity=uid_validity,
+                    raw=raw,
+                    internal_date=message_data.get(b"INTERNALDATE"),
+                    flags=tuple(message_data.get(b"FLAGS", ())),
+                )
 
     def execute_action(self, uid: int, action: str, target: str | None, flag: str | None) -> None:
         client, _ = self._connected()

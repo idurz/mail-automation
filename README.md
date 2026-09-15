@@ -17,7 +17,7 @@ The main processing loop is implemented in `app/main.py`.
 
 ## Rules
 
-Rules are evaluated in their configured order. Conditions can inspect the message subject, body text, sender, recipient, Rspamd score, Rspamd action, and Rspamd symbols.
+Rules are evaluated in their configured order. Conditions can inspect the message subject, body text, sender, recipient, Rspamd score, Rspamd action, Rspamd symbols, message age in days (`age_days`), and whether the message is unread (`unread`).
 
 Example:
 
@@ -26,9 +26,22 @@ Example:
   condition: "contains(subject, 'invoice') or contains(text, 'invoice')"
   action: move
   target: Finance
+- name: delete_unread_after_30_days
+  condition: "unread and age_days >= 30"
+  action: delete
+- name: delete_older_than_1_year
+  condition: "age_days >= 365"
+  action: delete
+- name: delete_old_newsletters
+  condition: "age_days >= 14 and contains(from_addr, 'newsletter@x.com')"
+  action: delete
 ```
 
+`age_days` is computed from the mailbox's IMAP `INTERNALDATE` for each message. Messages that don't match any rule (action `none`) are re-evaluated on every poll cycle rather than being skipped forever, so age-based rules keep taking effect as messages get older.
+
 Rules can be defined in `config.yaml` or added through the web interface. Rules added through the web interface are stored in SQLite.
+
+The `paperless` action uploads each attachment on a matching message to a [Paperless-ngx](https://docs.paperless-ngx.com/) instance via its `/api/documents/post_document/` endpoint, then moves the message out of the inbox to the rule's `target` folder (for example `Archive`). Configure the integration under `paperless` in `config.yaml`, or with the `PAPERLESS_URL` and `PAPERLESS_TOKEN` environment variables.
 
 ## Web Interface
 
@@ -38,7 +51,7 @@ It allows users to add and delete rules, view active rules, view recent mail act
 
 ## Configuration
 
-The default configuration is in `config.yaml`. IMAP and Rspamd settings can also be supplied through environment variables, including `IMAP_HOST`, `IMAP_PORT`, `IMAP_USERNAME`, `IMAP_PASSWORD`, `IMAP_ACCOUNTS`, `RSPAMD_URL`, and `RSPAMD_PASSWORD`.
+The default configuration is in `config.yaml`. IMAP and Rspamd settings can also be supplied through environment variables, including `IMAP_HOST`, `IMAP_PORT`, `IMAP_USERNAME`, `IMAP_PASSWORD`, `IMAP_ACCOUNTS`, `RSPAMD_URL`, and `RSPAMD_PASSWORD`. Paperless settings can be supplied through `PAPERLESS_URL` and `PAPERLESS_TOKEN`.
 
 `IMAP_ACCOUNTS` supports a JSON list when multiple accounts are required.
 
@@ -64,6 +77,7 @@ python -m app.main --config /app/config.yaml
 - `app/imap_client.py` - IMAP connection and mail actions
 - `app/email_parser.py` - Email parsing
 - `app/rspamd.py` - Rspamd integration
+- `app/paperless.py` - Paperless-ngx document upload integration
 - `app/rules.py` - Rule condition evaluation
 - `app/state.py` - SQLite state and action history
 - `app/web.py` - Flask API and web server
