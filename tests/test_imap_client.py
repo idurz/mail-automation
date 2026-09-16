@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 
 from app.config import ImapConfig
 from app.imap_client import MailboxClient, ImapMessage
+from app.main import _is_trusted_sender
 
 
 def test_new_messages_peeks_body_without_setting_seen_flag():
@@ -44,3 +45,10 @@ def test_new_messages_peeks_body_without_setting_seen_flag():
         flags=(b"\\Seen",),
     )
     mock_client.fetch.assert_called_once_with([101], [b"BODY.PEEK[]", b"INTERNALDATE", b"FLAGS"])
+
+
+def test_trusted_sender_matches_exact_email_address_case_insensitively():
+    trusted_senders = frozenset({"friend@example.com"})
+
+    assert _is_trusted_sender("Friend@Example.com", trusted_senders)
+    assert not _is_trusted_sender("other@example.com", trusted_senders)

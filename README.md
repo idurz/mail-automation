@@ -8,7 +8,7 @@ Mail Automation watches one or more IMAP mailboxes, screens every new message wi
 2. It connects to each configured IMAP account.
 3. It retrieves messages from the selected mailbox, usually `INBOX`.
 4. Each message is parsed and sent to Rspamd for spam analysis.
-5. Messages Rspamd flags as spam (reject, soft reject, add header, rewrite subject, or a score at/above the required threshold) are moved straight to `imap.spam_folder`, skipping the rules below.
+5. Messages Rspamd flags as spam (reject, soft reject, add header, rewrite subject, or a score at/above the required threshold) are moved straight to `imap.spam_folder`, skipping the rules below. Senders listed in `rspamd.trusted_senders` are exempt from this automatic move and continue to the ordinary rules.
 6. Everything else is evaluated against your ordered automation rules; the first matching rule wins.
 7. The rule's action is executed: `move`, `copy`, `delete`, `flag`, `paperless`, or `none` (leave it alone).
 8. Every UID is only ever fetched again until it produces an action other than `none` — messages that don't yet match anything are re-checked on each poll, which is what lets age-based rules (see below) eventually catch up with them.
@@ -111,6 +111,17 @@ It allows users to add and delete rules, view active rules, view recent mail act
 The default configuration is in `config.yaml`. IMAP and Rspamd settings can also be supplied through environment variables, including `IMAP_HOST`, `IMAP_PORT`, `IMAP_USERNAME`, `IMAP_PASSWORD`, `IMAP_ACCOUNTS`, `RSPAMD_URL`, and `RSPAMD_PASSWORD`. Paperless settings can be supplied through `PAPERLESS_URL` and `PAPERLESS_TOKEN`.
 
 `IMAP_ACCOUNTS` supports a JSON list when multiple accounts are required.
+
+To keep known contacts out of the automatic spam move, list their exact email addresses under `rspamd.trusted_senders`:
+
+```yaml
+rspamd:
+  trusted_senders:
+    - colleague@example.com
+    - billing@vendor.example
+```
+
+Address comparisons are case-insensitive. This is an exact-address allowlist: trusted messages still receive their Rspamd score and are evaluated by your normal rules.
 
 ## Running with Docker
 

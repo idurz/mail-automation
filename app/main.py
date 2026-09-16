@@ -77,7 +77,9 @@ def _process_mailbox(
             result = rspamd.check(item.raw)
             age_days = _age_in_days(item.internal_date, now)
             unread = b"\\Seen" not in item.flags
-            if _rspamd_marks_spam(result.action, result.score, result.required_score):
+            if _rspamd_marks_spam(result.action, result.score, result.required_score) and not _is_trusted_sender(
+                message.from_addr, rspamd.config.trusted_senders,
+            ):
                 rule_name, action, target, flag = "rspamd_spam", "move", imap_config.spam_folder, None
             else:
                 rules = state.rules()
@@ -127,6 +129,10 @@ def _rspamd_marks_spam(action: str, score: float, required_score: float) -> bool
     return action.lower() in {"reject", "soft reject", "add header", "rewrite subject"} or (
         required_score > 0 and score >= required_score
     )
+
+
+def _is_trusted_sender(sender: str, trusted_senders: frozenset[str]) -> bool:
+    return sender.strip().lower() in trusted_senders
 
 
 if __name__ == "__main__":

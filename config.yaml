@@ -13,6 +13,10 @@ rspamd:
   url: http://rspamd:11333
   password: ""
   timeout: 30
+  # Exact sender addresses that skip the automatic Rspamd-to-Junk move.
+  # They still pass through the rules below.
+  trusted_senders:
+    # - colleague@example.com
 
 # Optional: upload attachments to a Paperless-ngx instance with the
 # 'paperless' rule action. Leave url empty to disable the integration.

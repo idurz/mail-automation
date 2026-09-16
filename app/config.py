@@ -27,6 +27,7 @@ class RspamdConfig:
     url: str
     password: str | None
     timeout: int
+    trusted_senders: frozenset[str]
 
 
 @dataclass(frozen=True)
@@ -77,6 +78,7 @@ def load_config(path: str | Path) -> Config:
             url=_environment_or_config("RSPAMD_URL", rspamd["url"]).rstrip("/"),
             password=os.environ.get("RSPAMD_PASSWORD", rspamd.get("password")),
             timeout=rspamd.get("timeout", 30),
+            trusted_senders=_trusted_senders(rspamd.get("trusted_senders", [])),
         ),
         state=StateConfig(db_path=Path(state.get("db_path", "/data/state.db"))),
         rules=rules,
@@ -100,6 +102,12 @@ def _paperless_config(paperless: dict[str, Any]) -> PaperlessConfig | None:
 def _environment_or_config(name: str, fallback: Any) -> Any:
     value = os.environ.get(name)
     return value if value else fallback
+
+
+def _trusted_senders(value: Any) -> frozenset[str]:
+    if not isinstance(value, list) or not all(isinstance(sender, str) for sender in value):
+        raise ValueError("rspamd.trusted_senders must be a list of email addresses")
+    return frozenset(sender.strip().lower() for sender in value if sender.strip())
 
 
 def _imap_accounts(defaults: dict[str, Any]) -> tuple[ImapConfig, ...]:
